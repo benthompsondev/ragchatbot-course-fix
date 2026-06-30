@@ -107,7 +107,11 @@ There were two separate problems behind it:
      as it actually needs,
    - drops the tools on the final round so the model has to give a text answer, and
      never leaves a dangling `tool_use` behind (the API rejects that with a `400`),
-   - falls back to a plain message if a response comes back with no text at all.
+   - on that final round, explicitly tells the model to answer from what it already
+     found. Without this it would sometimes still "want" another search, get no
+     tools, and hand back an empty turn — which showed up as a flaky "couldn't
+     generate a response" on roughly 1 in 3 broad questions.
+   - falls back to a plain message if a response somehow still comes back empty.
 
 If you still hit a 404 on queries, your key probably can't access that model. Run
 this to list the models you *can* use, then update `ANTHROPIC_MODEL` in

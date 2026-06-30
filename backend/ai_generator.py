@@ -125,14 +125,26 @@ Provide only the direct answer to what was asked.
                         "content": tool_result
                     })
 
-            # Add tool results as a single user message. Every tool_use above
-            # now has its matching tool_result, which the API requires.
-            if tool_results:
-                messages.append({"role": "user", "content": tool_results})
-
             # On the final allowed round, drop tools so the model is forced to
             # answer with text and can't leave a dangling tool_use behind.
             is_last_round = round_num == self.MAX_TOOL_ROUNDS - 1
+
+            # Add tool results as a single user message. Every tool_use above
+            # now has its matching tool_result, which the API requires. On the
+            # last round, also tell the model to answer from what it has — without
+            # this nudge it often "wants" another search, gets no tools, and
+            # returns an empty turn (which would fall back to the error message).
+            if tool_results:
+                content = list(tool_results)
+                if is_last_round:
+                    content.append({
+                        "type": "text",
+                        "text": "Based on the search results above, answer the "
+                                "user's question now. Do not request any more "
+                                "searches — use the information you already have."
+                    })
+                messages.append({"role": "user", "content": content})
+
             api_params = {
                 **self.base_params,
                 "messages": messages,
