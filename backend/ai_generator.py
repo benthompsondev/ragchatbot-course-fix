@@ -36,9 +36,14 @@ Provide only the direct answer to what was asked.
         # Pre-build base API parameters.
         # Note: Sonnet 5 (and Opus 4.7+) reject sampling params like temperature
         # with a 400, so we don't set temperature here — the model defaults apply.
+        # max_tokens must cover thinking + the answer: Sonnet 5 runs adaptive
+        # thinking by default, and those thinking tokens count against this cap.
+        # At 800 a longer answer (e.g. a course outline) could burn the whole
+        # budget on thinking and return a turn with no text block, which showed
+        # up as the "couldn't generate a response" fallback.
         self.base_params = {
             "model": self.model,
-            "max_tokens": 800
+            "max_tokens": 4096
         }
     
     def generate_response(self, query: str,
@@ -167,8 +172,10 @@ Provide only the direct answer to what was asked.
 
     @staticmethod
     def _extract_text(response) -> str:
-        """Return the first text block, or a safe fallback if there is none."""
-        for block in response.content:
-            if getattr(block, "type", None) == "text":
-                return block.text
+        """Return the model's text answer, joining every text block in the turn
+        (adaptive-thinking responses interleave thinking + text blocks). Falls
+        back to a safe message only if the turn genuinely had no text at all."""
+        parts = [b.text for b in response.content if getattr(b, "type", None) == "text"]
+        if parts:
+            return "\n".join(parts).strip()
         return "I wasn't able to generate a response for that. Please try rephrasing your question."
