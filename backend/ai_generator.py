@@ -33,10 +33,11 @@ Provide only the direct answer to what was asked.
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
         
-        # Pre-build base API parameters
+        # Pre-build base API parameters.
+        # Note: Sonnet 5 (and Opus 4.7+) reject sampling params like temperature
+        # with a 400, so we don't set temperature here — the model defaults apply.
         self.base_params = {
             "model": self.model,
-            "temperature": 0,
             "max_tokens": 800
         }
     
