@@ -2,10 +2,15 @@
 
 This is the starter codebase from the DeepLearning.AI "Claude Code" course. I was
 working through the course, went to run it, and every query came back as a 500.
-Turns out the code was written against a Claude model that has since been retired,
-and the way it handled tool calls only ever worked with that older model's
-behaviour. I tracked down both problems, fixed them, and put the working version up
-here so anyone else stuck on the same course can skip the headache.
+Turns out a few things were built against an older Claude model: a retired model ID,
+a tool-use loop that only survived one search, and a reply-token budget too small
+for how newer models "think." I tracked them down, fixed them, and put the working
+version up here so anyone else stuck on the same course can skip the headache.
+
+It runs on current Claude models up to Claude Sonnet 5 today. A future model might
+need another small tweak — the model ID lives in one spot (`backend/config.py`), and
+the fixes below explain the gotchas — but nothing here is hard-wired to one specific
+model.
 
 If your queries are failing with `Error: Query failed` or a 500, jump to
 [Fixes applied](#fixes-applied) — it explains exactly what was wrong and what I
@@ -96,7 +101,7 @@ Lesson Link: <url>
 ## Fixes applied
 
 Out of the box, every query to `POST /api/query` fails with current Claude models.
-There were two separate problems behind it:
+There were three separate problems behind it:
 
 1. **The model ID was retired.** `backend/config.py` pointed at
    `claude-sonnet-4-20250514`, which Anthropic no longer serves, so the API just
@@ -120,6 +125,16 @@ There were two separate problems behind it:
      tools, and hand back an empty turn — which showed up as a flaky "couldn't
      generate a response" on roughly 1 in 3 broad questions.
    - falls back to a plain message if a response somehow still comes back empty.
+
+3. **The reply-token budget was too small for newer models.**
+   `backend/ai_generator.py` capped every reply at `max_tokens: 800`. Claude
+   Sonnet 5 runs *adaptive thinking* by default, and those thinking tokens count
+   against that same cap. On a longer answer — a course outline, say — the model
+   could spend the whole 800 tokens thinking and hand back a turn with no text in it
+   at all, which showed up as an intermittent "I wasn't able to generate a
+   response." I raised the cap to `4096` so the thinking *and* a full answer fit, and
+   made the text extraction join every text block in the turn instead of grabbing
+   only the first one.
 
 If you still hit a 404 on queries, your key probably can't access that model. Run
 this to list the models you *can* use, then update `ANTHROPIC_MODEL` in
