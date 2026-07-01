@@ -17,8 +17,8 @@ ENV/
 # ChromaDB
 backend/chroma_db/
 
-# Course transcripts are not redistributed here — add your own to docs/
-docs/*.txt
+# Course transcripts (DeepLearning.AI) are included in docs/ so the app runs on
+# clone — see README "Course materials" for the credit/source. Keep them tracked.
 
 # Uploads
 uploads/

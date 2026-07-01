@@ -11,11 +11,11 @@ If your queries are failing with `Error: Query failed` or a 500, jump to
 [Fixes applied](#fixes-applied) — it explains exactly what was wrong and what I
 changed.
 
-Two things before you run it:
-- You need your own Anthropic API key (goes in `.env`, see below).
-- The course transcripts aren't included here — they're DeepLearning.AI's content,
-  not mine to redistribute. Drop your own `.txt` files into `docs/` (see
-  [Adding course materials](#adding-course-materials)).
+Before you run it: you need your own Anthropic API key (goes in `.env`, see below).
+That's it — the four DeepLearning.AI course transcripts are already in `docs/`, so
+the app answers real questions the moment you add your key. Those transcripts are
+DeepLearning.AI's, pulled from their public starter repo — see
+[Course materials](#course-materials) for the source and credit.
 
 ## What it does
 
@@ -70,12 +70,18 @@ The application will be available at:
 - Web Interface: `http://localhost:8000`
 - API Documentation: `http://localhost:8000/docs`
 
-## Adding course materials
+## Course materials
 
-The course transcripts from DeepLearning.AI are **not** redistributed in this repo.
-Drop your own plain-text course files into the `docs/` folder (any `.txt` files) and
-they'll be ingested into ChromaDB on startup. The expected format is one file per
-course, starting with metadata lines like:
+The `docs/` folder ships with the four course transcripts from the DeepLearning.AI
+starter codebase — Building Towards Computer Use, MCP: Build Rich-Context AI Apps,
+Advanced Retrieval with Chroma, and Prompt Compression & Query Optimization — so the
+app has real content to answer from the moment you clone it. Credit for that content
+goes to DeepLearning.AI; it comes from their public starter repo:
+https://github.com/https-deeplearning-ai/starting-ragchatbot-codebase
+
+Want to add your own course? Drop any plain-text `.txt` file into `docs/` and it's
+ingested into ChromaDB on startup. One file per course, starting with metadata lines
+like:
 
 ```
 Course Title: <title>
@@ -95,7 +101,9 @@ There were two separate problems behind it:
 1. **The model ID was retired.** `backend/config.py` pointed at
    `claude-sonnet-4-20250514`, which Anthropic no longer serves, so the API just
    returns `404 not_found_error`. I pointed it at a current model
-   (`claude-sonnet-4-6`) — set this to whatever your own API key can access.
+   (`claude-sonnet-5`) — set this to whatever your own API key can access. Heads up:
+   newer models (Sonnet 5, Opus 4.7+) also reject the `temperature` parameter with a
+   `400`, so I removed the hardcoded `temperature: 0` in `backend/ai_generator.py`.
 
 2. **The tool-use loop only handled one search, then crashed.**
    `backend/ai_generator.py` ran the search tool exactly once, then re-called the
